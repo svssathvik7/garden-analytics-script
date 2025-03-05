@@ -33,7 +33,7 @@ const trackTrafficSource = async () => {
     };
     // dont await it slows the service
     console.log("[TrafficSource] Sending payload:", payload);
-    fetch(`${process.env.BACKEND_TRAFFIC_API}`, {
+    fetch("http://localhost:3001/traffic/record", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -88,7 +88,7 @@ const sendWalletData = async (address) => {
       };
 
       console.log("[WalletData] Sending payload:", payload);
-      const response = await fetch(`${process.env.BACKEND_WALLET_API}`, {
+      const response = await fetch("http://localhost:3001/wallet/record", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -122,6 +122,7 @@ const sendWalletData = async (address) => {
       })
       .catch((error) => {});
     window.ethereum.on("accountsChanged", (accounts) => {
+      console.log("accountsChanged", accounts);
       if (accounts.length > 0) {
         sendWalletData(accounts[0]);
       }
