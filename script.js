@@ -32,13 +32,21 @@ const trackTrafficSource = async () => {
       url: window.location.href,
     };
     // dont await it slows the service
+    console.log("[TrafficSource] Sending payload:", payload);
     fetch(`${process.env.BACKEND_TRAFFIC_API}`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
       },
       body: JSON.stringify(payload),
-    });
+    })
+      .then((response) => {
+        console.log("[TrafficSource] Response status:", response.status);
+        return response;
+      })
+      .catch((error) => {
+        console.error("[TrafficSource] Error:", error);
+      });
   }
 };
 
@@ -79,7 +87,8 @@ const sendWalletData = async (address) => {
         wallet_type: getWalletType(),
       };
 
-      fetch(`${process.env.BACKEND_WALLET_API}`, {
+      console.log("[WalletData] Sending payload:", payload);
+      const response = await fetch(`${process.env.BACKEND_WALLET_API}`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -87,11 +96,14 @@ const sendWalletData = async (address) => {
         body: JSON.stringify(payload),
       });
 
+      console.log("[WalletData] Response status:", response.status);
+
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);
       }
 
       const data = await response.json();
+      console.log("[WalletData] Response data:", data);
     } else {
     }
   } catch (error) {}
