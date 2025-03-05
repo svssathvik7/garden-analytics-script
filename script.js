@@ -98,6 +98,7 @@ const sendWalletData = async (address) => {
 };
 
 (() => {
+  console.log("script loaded");
   trackTrafficSource();
   if (window.ethereum) {
     window.ethereum
