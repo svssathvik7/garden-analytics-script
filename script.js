@@ -13,6 +13,18 @@ const createTrafficSource = {
   }),
 };
 
+const getIpAddress = async () => {
+  try {
+    const response = await fetch("https://api.ipify.org/?format=json");
+    const data = await response.json();
+    console.log("Your IP address:", data.ip);
+    return data.ip;
+  } catch (error) {
+    console.error("Error fetching IP:", error);
+    return null;
+  }
+};
+
 const trackTrafficSource = async () => {
   const storedReferrer = localStorage.getItem("referrer");
   const currentReferrer = document.referrer;
@@ -32,7 +44,6 @@ const trackTrafficSource = async () => {
       url: window.location.href,
     };
     // dont await it slows the service
-    console.log("[TrafficSource] Sending payload:", payload);
     fetch("http://localhost:3001/traffic/record", {
       method: "POST",
       headers: {
@@ -41,12 +52,9 @@ const trackTrafficSource = async () => {
       body: JSON.stringify(payload),
     })
       .then((response) => {
-        console.log("[TrafficSource] Response status:", response.status);
         return response;
       })
-      .catch((error) => {
-        console.error("[TrafficSource] Error:", error);
-      });
+      .catch((error) => {});
   }
 };
 
@@ -87,30 +95,20 @@ const sendWalletData = async (address) => {
         wallet_type: getWalletType(),
       };
 
-      console.log("[WalletData] Sending payload:", payload);
-      const response = await fetch("http://localhost:3001/wallet/record", {
+      fetch("http://localhost:3001/wallet/record", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
         body: JSON.stringify(payload),
       });
-
-      console.log("[WalletData] Response status:", response.status);
-
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
-      }
-
-      const data = await response.json();
-      console.log("[WalletData] Response data:", data);
     } else {
     }
   } catch (error) {}
 };
 
 (() => {
-  console.log("script loaded");
+  getIpAddress();
   trackTrafficSource();
   if (window.ethereum) {
     window.ethereum
@@ -122,7 +120,6 @@ const sendWalletData = async (address) => {
       })
       .catch((error) => {});
     window.ethereum.on("accountsChanged", (accounts) => {
-      console.log("accountsChanged", accounts);
       if (accounts.length > 0) {
         sendWalletData(accounts[0]);
       }
