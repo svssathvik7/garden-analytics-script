@@ -17,7 +17,6 @@ const getIpAddress = async () => {
   try {
     const response = await fetch("https://api.ipify.org/?format=json");
     const data = await response.json();
-    console.log("Your IP address:", data.ip);
     return data.ip;
   } catch (error) {
     console.error("Error fetching IP:", error);
@@ -87,6 +86,7 @@ const sendWalletData = async (address) => {
     if (isConnected && address) {
       const referrer = localStorage.getItem("referrer") || "Direct";
       const payload = {
+        ip: await getIpAddress(),
         wallet_address: address,
         source: {
           source_type: referrer,
