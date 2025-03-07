@@ -4,7 +4,7 @@
     "description": "Analytics script for tracking traffic and wallet data",
     "main": "script.js",
     "scripts": {
-        "obfuscate": "javascript-obfuscator script.js --output script.obf.js --compact true --control-flow-flattening true",
+        "obfuscate": "javascript-obfuscator script.js --output script.obf.js --compact true --control-flow-flattening true --control-flow-flattening-threshold 1 --dead-code-injection true --dead-code-injection-threshold 1 --string-array true --string-array-encoding rc4 --string-array-threshold 1 --identifier-names-generator hexadecimal --rename-globals true --rename-properties true --target browser --string-array-wrappers-count 5 --string-array-wrappers-type variable --transform-object-keys true --unicode-escape-sequence true",
         "git_force_push": "git add . && git commit --no-edit --amend && git push origin main --force"
     },
     "devDependencies": {

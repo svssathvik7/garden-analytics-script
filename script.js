@@ -3,6 +3,77 @@ const TrafficSourceType = {
   Direct: "Direct",
 };
 
+// AES encryption key (32 bytes for AES-256)
+const ENCRYPTION_KEY = "your-secure-32-byte-encryption-key-here";
+
+// Key derivation function to ensure 256-bit key length
+const deriveKey = async (key) => {
+  const encoder = new TextEncoder();
+  const keyMaterial = await crypto.subtle.importKey(
+    "raw",
+    encoder.encode(key),
+    { name: "PBKDF2" },
+    false,
+    ["deriveBits", "deriveKey"]
+  );
+
+  return crypto.subtle.deriveKey(
+    {
+      name: "PBKDF2",
+      salt: encoder.encode("analytics-salt"),
+      iterations: 100000,
+      hash: "SHA-256",
+    },
+    keyMaterial,
+    { name: "AES-GCM", length: 256 },
+    false,
+    ["encrypt"]
+  );
+};
+
+// Encryption utilities
+const encryptPayload = async (data) => {
+  try {
+    // Derive a proper 256-bit key
+    const key = await deriveKey(ENCRYPTION_KEY);
+
+    // Generate a random IV
+    const iv = crypto.getRandomValues(new Uint8Array(12));
+
+    // Import the key
+    return crypto.subtle
+      .importKey("raw", keyBytes, { name: "AES-GCM", length: 256 }, false, [
+        "encrypt",
+      ])
+      .then((key) => {
+        // Convert data to string if it's an object
+        const dataStr =
+          typeof data === "object" ? JSON.stringify(data) : String(data);
+
+        // Encrypt the data
+        return crypto.subtle
+          .encrypt(
+            { name: "AES-GCM", iv },
+            key,
+            new TextEncoder().encode(dataStr)
+          )
+          .then((encrypted) => {
+            // Combine IV and encrypted data
+            const encryptedArray = new Uint8Array(encrypted);
+            const combined = new Uint8Array(iv.length + encryptedArray.length);
+            combined.set(iv);
+            combined.set(encryptedArray, iv.length);
+
+            // Convert to base64
+            return btoa(String.fromCharCode.apply(null, combined));
+          });
+      });
+  } catch (error) {
+    console.error("Encryption error:", error);
+    return null;
+  }
+};
+
 const createTrafficSource = {
   referrer: (platform) => ({
     Referrer: { platform },
@@ -19,7 +90,6 @@ const getIpAddress = async () => {
     const data = await response.json();
     return data.ip;
   } catch (error) {
-    console.error("Error fetching IP:", error);
     return null;
   }
 };
@@ -42,18 +112,23 @@ const trackTrafficSource = async () => {
       source_type: source,
       url: window.location.href,
     };
-    // dont await it slows the service
-    fetch("http://localhost:3001/traffic/record", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify(payload),
-    })
-      .then((response) => {
-        return response;
+
+    // Encrypt the payload
+    encryptPayload(payload).then((encryptedData) => {
+      if (!encryptedData) return;
+
+      fetch("http://localhost:3001/traffic/record", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ data: encryptedData }),
       })
-      .catch((error) => {});
+        .then((response) => {
+          return response;
+        })
+        .catch((error) => {});
+    });
   }
 };
 
@@ -95,12 +170,17 @@ const sendWalletData = async (address) => {
         wallet_type: getWalletType(),
       };
 
-      fetch("http://localhost:3001/wallet/record", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(payload),
+      // Encrypt wallet data payload
+      encryptPayload(payload).then((encryptedData) => {
+        if (!encryptedData) return;
+
+        fetch("http://localhost:3001/wallet/record", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ data: encryptedData }),
+        });
       });
     } else {
     }
