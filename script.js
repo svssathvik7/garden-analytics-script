@@ -3,77 +3,6 @@ const TrafficSourceType = {
   Direct: "Direct",
 };
 
-// AES encryption key (32 bytes for AES-256)
-const ENCRYPTION_KEY = "your-secure-32-byte-encryption-key-here";
-
-// Key derivation function to ensure 256-bit key length
-const deriveKey = async (key) => {
-  const encoder = new TextEncoder();
-  const keyMaterial = await crypto.subtle.importKey(
-    "raw",
-    encoder.encode(key),
-    { name: "PBKDF2" },
-    false,
-    ["deriveBits", "deriveKey"]
-  );
-
-  return crypto.subtle.deriveKey(
-    {
-      name: "PBKDF2",
-      salt: encoder.encode("analytics-salt"),
-      iterations: 100000,
-      hash: "SHA-256",
-    },
-    keyMaterial,
-    { name: "AES-GCM", length: 256 },
-    false,
-    ["encrypt"]
-  );
-};
-
-// Encryption utilities
-const encryptPayload = async (data) => {
-  try {
-    // Derive a proper 256-bit key
-    const key = await deriveKey(ENCRYPTION_KEY);
-
-    // Generate a random IV
-    const iv = crypto.getRandomValues(new Uint8Array(12));
-
-    // Import the key
-    return crypto.subtle
-      .importKey("raw", keyBytes, { name: "AES-GCM", length: 256 }, false, [
-        "encrypt",
-      ])
-      .then((key) => {
-        // Convert data to string if it's an object
-        const dataStr =
-          typeof data === "object" ? JSON.stringify(data) : String(data);
-
-        // Encrypt the data
-        return crypto.subtle
-          .encrypt(
-            { name: "AES-GCM", iv },
-            key,
-            new TextEncoder().encode(dataStr)
-          )
-          .then((encrypted) => {
-            // Combine IV and encrypted data
-            const encryptedArray = new Uint8Array(encrypted);
-            const combined = new Uint8Array(iv.length + encryptedArray.length);
-            combined.set(iv);
-            combined.set(encryptedArray, iv.length);
-
-            // Convert to base64
-            return btoa(String.fromCharCode.apply(null, combined));
-          });
-      });
-  } catch (error) {
-    console.error("Encryption error:", error);
-    return null;
-  }
-};
-
 const createTrafficSource = {
   referrer: (platform) => ({
     Referrer: { platform },
@@ -84,67 +13,37 @@ const createTrafficSource = {
   }),
 };
 
-const getIpAddress = async () => {
-  try {
-    const response = await fetch("https://api.ipify.org/?format=json");
-    const data = await response.json();
-    return data.ip;
-  } catch (error) {
-    return null;
-  }
-};
-
 const trackTrafficSource = async () => {
   const storedReferrer = localStorage.getItem("referrer");
   const currentReferrer = document.referrer;
 
   if (!storedReferrer) {
-    let source;
+    let source_type;
 
     if (currentReferrer == "") {
       localStorage.setItem("referrer", "Direct");
-      source = createTrafficSource.direct();
+      source_type = createTrafficSource.direct();
     } else {
       localStorage.setItem("referrer", currentReferrer);
-      source = createTrafficSource.referrer(currentReferrer);
+      source_type = createTrafficSource.referrer(currentReferrer);
     }
     let payload = {
-      source_type: source,
+      source_type: source_type,
       url: window.location.href,
     };
 
-    // Encrypt the payload
-    encryptPayload(payload).then((encryptedData) => {
-      if (!encryptedData) return;
-
-      fetch("http://localhost:3001/traffic/record", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ data: encryptedData }),
+    fetch("https://garden-traffic-analysis.onrender.com/traffic/record", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(payload),
+    })
+      .then((response) => {
+        return response;
       })
-        .then((response) => {
-          return response;
-        })
-        .catch((error) => {});
-    });
+      .catch((error) => {});
   }
-};
-
-const getWalletType = () => {
-  if (!window.ethereum) return null;
-
-  // Check for specific wallet providers
-  if (window.ethereum.isMetaMask) return "metamask";
-  if (window.ethereum.isBraveWallet) return "brave wallet";
-  if (window.ethereum.isPhantom) return "phantom";
-  if (window.ethereum.isCoinbaseWallet) return "coinbase wallet";
-  if (window.ethereum.isOKXWallet) return "okx wallet";
-  if (window.ethereum.isRabby) return "rabby wallet";
-  if (window.unisat) return "unisat";
-
-  return "browser wallet"; // default fallback
 };
 
 const sendWalletData = async (address) => {
@@ -159,36 +58,52 @@ const sendWalletData = async (address) => {
     const isConnected = accounts && accounts.length > 0;
 
     if (isConnected && address) {
+      let source;
       const referrer = localStorage.getItem("referrer") || "Direct";
+      if (referrer == "Direct") {
+        source = createTrafficSource.direct();
+      } else {
+        source = createTrafficSource.referrer(referrer);
+      }
+      /* javascript-obfuscator:disable */
       const payload = {
-        ip: await getIpAddress(),
         wallet_address: address,
         source: {
-          source_type: referrer,
+          source_type: source,
           url: window.location.href,
         },
         wallet_type: getWalletType(),
       };
+      /* javascript-obfuscator:enable */
 
-      // Encrypt wallet data payload
-      encryptPayload(payload).then((encryptedData) => {
-        if (!encryptedData) return;
-
-        fetch("http://localhost:3001/wallet/record", {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({ data: encryptedData }),
-        });
+      console.log("wallet req!", payload);
+      fetch("https://garden-traffic-analysis.onrender.com/wallet/record", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(payload),
       });
-    } else {
     }
   } catch (error) {}
 };
 
+const getWalletType = () => {
+  if (!window.ethereum) return null;
+
+  // Check for specific wallet providers
+  if (window.ethereum.isMetaMask) return "metamask";
+  if (window.ethereum.isBraveWallet) return "brave";
+  if (window.ethereum.isPhantom) return "phantom";
+  if (window.ethereum.isCoinbaseWallet) return "coinbase";
+  if (window.ethereum.isOKXWallet) return "okx";
+  if (window.ethereum.isRabby) return "rabby";
+  if (window.unisat) return "unisat";
+
+  return "browser wallet"; // default fallback
+};
+
 (() => {
-  getIpAddress();
   trackTrafficSource();
   if (window.ethereum) {
     window.ethereum
