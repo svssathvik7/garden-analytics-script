@@ -13,6 +13,17 @@ const createTrafficSource = {
   }),
 };
 
+const getIpAddress = async () => {
+  try {
+    const response = await fetch("https://api.ipify.org/?format=json");
+    const data = await response.json();
+    return data.ip;
+  } catch (error) {
+    console.error("Error fetching IP:", error);
+    return null;
+  }
+};
+
 const trackTrafficSource = async () => {
   const storedReferrer = localStorage.getItem("referrer");
   const currentReferrer = document.referrer;
@@ -27,10 +38,12 @@ const trackTrafficSource = async () => {
       localStorage.setItem("referrer", currentReferrer);
       source_type = createTrafficSource.referrer(currentReferrer);
     }
+    /* javascript-obfuscator:disable */
     let payload = {
       source_type: source_type,
       url: window.location.href,
     };
+    /* javascript-obfuscator:enable */
 
     fetch("https://garden-traffic-analysis.onrender.com/traffic/record", {
       method: "POST",
@@ -67,6 +80,7 @@ const sendWalletData = async (address) => {
       }
       /* javascript-obfuscator:disable */
       const payload = {
+        ip: await getIpAddress(),
         wallet_address: address,
         source: {
           source_type: source,
