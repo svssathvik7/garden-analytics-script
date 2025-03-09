@@ -47,8 +47,8 @@ const generateEncryptionKey = async () => {
 const encryptData = async (data, key) => {
   // Use fixed IV instead of random generation
   const iv = new Uint8Array(12);
-  for (let i = 0; i < 24; i += 2) {
-    iv[i / 2] = parseInt(FIXED_IV_HEX.substr(i, 2), 16);
+  for (let i = 0; i < FIXED_IV_HEX.length && i < 24; i += 2) {
+    iv[i / 2] = parseInt(FIXED_IV_HEX.slice(i, i + 2), 16);
   }
 
   // Convert data to ArrayBuffer
