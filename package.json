@@ -4,7 +4,7 @@
     "description": "Analytics script for tracking traffic and wallet data",
     "main": "script.js",
     "scripts": {
-        "obfuscate": "javascript-obfuscator script.js --output script.obf.js --compact true --control-flow-flattening true --control-flow-flattening-threshold 1 --dead-code-injection true --dead-code-injection-threshold 1 --string-array true --string-array-encoding base64 --string-array-threshold 1 --identifier-names-generator hexadecimal --rename-globals true --rename-properties true --target browser --string-array-wrappers-count 5 --string-array-wrappers-type function --transform-object-keys true --unicode-escape-sequence true --self-defending true --split-strings true --split-strings-chunk-length 3 --numbers-to-expressions true --simplify true --string-array-rotate true --domain-lock [\"localhost\"] --domain-lock-redirect-url about:blank",
+        "obfuscate": "javascript-obfuscator script.js --output script.obf.js --compact true --control-flow-flattening false --dead-code-injection false --string-array true --string-array-encoding base64 --string-array-threshold 0.5 --identifier-names-generator hexadecimal --rename-globals true --rename-properties false --target browser --string-array-wrappers-count 1 --string-array-wrappers-type function --transform-object-keys false --unicode-escape-sequence false --self-defending false --split-strings true --split-strings-chunk-length 5 --numbers-to-expressions true --simplify true --string-array-rotate false",
         "git_force_push": "git add . && git commit --no-edit --amend && git push origin main --force"
     },
     "devDependencies": {
