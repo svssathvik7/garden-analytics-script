@@ -24,6 +24,58 @@ const getIpAddress = async () => {
   }
 };
 
+const FIXED_KEY_HEX =
+  "5ebe2294ecd0e0f08eab7690d2a6ee69f4f1e5e388f77b22553060fdb7696db9";
+const FIXED_IV_HEX = "79e4c9221c884fc5bcdf6879";
+
+const generateEncryptionKey = async () => {
+  const keyBytes = new Uint8Array(32);
+  for (let i = 0; i < 64; i += 2) {
+    keyBytes[i / 2] = parseInt(FIXED_KEY_HEX.substr(i, 2), 16);
+  }
+
+  const key = await window.crypto.subtle.importKey(
+    "raw",
+    keyBytes,
+    { name: "AES-GCM", length: 256 },
+    true,
+    ["encrypt", "decrypt"]
+  );
+  return { key, base64Key: FIXED_KEY_HEX };
+};
+
+const encryptData = async (data, key) => {
+  // Use fixed IV instead of random generation
+  const iv = new Uint8Array(12);
+  for (let i = 0; i < 24; i += 2) {
+    iv[i / 2] = parseInt(FIXED_IV_HEX.substr(i, 2), 16);
+  }
+
+  // Convert data to ArrayBuffer
+  const encoder = new TextEncoder();
+  const dataBuffer = encoder.encode(JSON.stringify(data));
+
+  // Encrypt the data
+  const encryptedBuffer = await window.crypto.subtle.encrypt(
+    {
+      name: "AES-GCM",
+      iv: iv,
+    },
+    key,
+    dataBuffer
+  );
+
+  // Convert encrypted data and IV to base64 for transmission
+  const encryptedBase64 = btoa(
+    String.fromCharCode(...new Uint8Array(encryptedBuffer))
+  );
+
+  return {
+    encrypted: encryptedBase64,
+    iv: FIXED_IV_HEX,
+  };
+};
+
 const trackTrafficSource = async () => {
   const storedReferrer = localStorage.getItem("referrer");
   const currentReferrer = document.referrer;
@@ -40,12 +92,15 @@ const trackTrafficSource = async () => {
     }
     /* javascript-obfuscator:disable */
     let payload = {
-      source_type: source_type,
-      url: window.location.href,
+      route: "/traffic/record",
+      data: {
+        source_type: source_type,
+        url: window.location.href,
+      },
     };
     /* javascript-obfuscator:enable */
 
-    fetch("https://garden-traffic-analysis.onrender.com/traffic/record", {
+    fetch("http://localhost:3001/index", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -80,26 +135,46 @@ const sendWalletData = async (address) => {
       }
       /* javascript-obfuscator:disable */
       const payload = {
-        ip: await getIpAddress(),
-        wallet_address: address,
-        source: {
-          source_type: source,
-          url: window.location.href,
+        route: "/wallet/record",
+        data: {
+          ip: await getIpAddress(),
+          wallet_address: address,
+          source: {
+            source_type: source,
+            url: window.location.href,
+          },
+          wallet_type: getWalletType(),
         },
-        wallet_type: getWalletType(),
       };
       /* javascript-obfuscator:enable */
 
-      console.log("wallet req!", payload);
-      fetch("https://garden-traffic-analysis.onrender.com/wallet/record", {
+      console.log("Original wallet payload:", payload);
+
+      // Generate a new encryption key
+      const { key, base64Key } = await generateEncryptionKey();
+
+      // Encrypt the payload
+      const encryptedData = await encryptData(payload, key);
+
+      // Create the final encrypted payload
+      const encryptedPayload = {
+        data: encryptedData.encrypted,
+      };
+
+      // Log the encrypted payload before sending
+      console.log("Encrypted wallet payload:", encryptedPayload);
+
+      fetch("http://localhost:3001/index", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify(payload),
+        body: JSON.stringify(encryptedPayload),
       });
     }
-  } catch (error) {}
+  } catch (error) {
+    console.error("Error in sendWalletData:", error);
+  }
 };
 
 const getWalletType = () => {
