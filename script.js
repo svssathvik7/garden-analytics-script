@@ -99,13 +99,22 @@ const trackTrafficSource = async () => {
       },
     };
     /* javascript-obfuscator:enable */
+    const { key, base64Key } = await generateEncryptionKey();
+
+    // Encrypt the payload
+    const encryptedData = await encryptData(payload, key);
+
+    // Create the final encrypted payload
+    const encryptedPayload = {
+      data: encryptedData.encrypted,
+    };
 
     fetch("http://localhost:3001/index", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
       },
-      body: JSON.stringify(payload),
+      body: JSON.stringify(encryptedPayload),
     })
       .then((response) => {
         return response;
