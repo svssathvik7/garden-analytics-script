@@ -92,7 +92,7 @@ const trackTrafficSource = async () => {
     }
     /* javascript-obfuscator:disable */
     let payload = {
-      route: "/traffic/record",
+      route: "/t/record",
       data: {
         source_type: source_type,
         url: window.location.href,
@@ -144,7 +144,7 @@ const sendWalletData = async (address) => {
       }
       /* javascript-obfuscator:disable */
       const payload = {
-        route: "/wallet/record",
+        route: "/w/record",
         data: {
           ip: await getIpAddress(),
           wallet_address: address,
