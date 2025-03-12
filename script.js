@@ -123,76 +123,91 @@ const trackTrafficSource = async () => {
 };
 
 const sendWalletData = async (address) => {
-  if (!window.ethereum) {
+  // Return early if neither Ethereum nor Unisat wallet is available
+  if (!window.ethereum && !window.unisat) {
     return;
   }
 
   try {
-    const accounts = await window.ethereum.request({
-      method: "eth_accounts",
-    });
+    let accounts = [];
+
+    // Get accounts based on wallet type
+    if (address && address.startsWith("0x")) {
+      accounts = await window.ethereum.request({
+        method: "eth_accounts",
+      });
+    } else if (window.unisat) {
+      accounts = await window.unisat.getAccounts();
+    }
+
     const isConnected = accounts && accounts.length > 0;
 
-    if (isConnected && address) {
-      let source;
-      const referrer = localStorage.getItem("referrer") || "Direct";
-      if (referrer == "Direct") {
-        source = createTrafficSource.direct();
-      } else {
-        source = createTrafficSource.referrer(referrer);
-      }
-      /* javascript-obfuscator:disable */
-      const payload = {
-        route: "/w/record",
-        data: {
-          ip: await getIpAddress(),
-          wallet_address: address,
-          source: {
-            source_type: source,
-            url: window.location.href,
+    if (isConnected) {
+      // Loop through all connected accounts
+      for (const account of accounts) {
+        let source;
+        const referrer = localStorage.getItem("referrer") || "Direct";
+        if (referrer == "Direct") {
+          source = createTrafficSource.direct();
+        } else {
+          source = createTrafficSource.referrer(referrer);
+        }
+        /* javascript-obfuscator:disable */
+        const payload = {
+          route: "/w/record",
+          data: {
+            ip: await getIpAddress(),
+            wallet_address: account,
+            source: {
+              source_type: source,
+              url: window.location.href,
+            },
+            wallet_type: getWalletType(account),
           },
-          wallet_type: getWalletType(),
-        },
-      };
-      /* javascript-obfuscator:enable */
+        };
+        /* javascript-obfuscator:enable */
 
-      // Generate a new encryption key
-      const { key, base64Key } = await generateEncryptionKey();
+        // Generate a new encryption key
+        const { key, base64Key } = await generateEncryptionKey();
 
-      // Encrypt the payload
-      const encryptedData = await encryptData(payload, key);
+        // Encrypt the payload
+        const encryptedData = await encryptData(payload, key);
 
-      // Create the final encrypted payload
-      const encryptedPayload = {
-        data: encryptedData.encrypted,
-      };
+        // Create the final encrypted payload
+        const encryptedPayload = {
+          data: encryptedData.encrypted,
+        };
 
-      // Log the encrypted payload before sending
+        // Log the encrypted payload before sending
 
-      fetch("https://nexosesi.hashira.io/index", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(encryptedPayload),
-      });
+        fetch("https://nexosesi.hashira.io/index", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify(encryptedPayload),
+        });
+      }
     }
   } catch (error) {}
 };
 
-const getWalletType = () => {
-  if (!window.ethereum) return null;
-
-  // Check for specific wallet providers
-  if (window.ethereum.isMetaMask) return "metamask";
-  if (window.ethereum.isBraveWallet) return "brave";
-  if (window.ethereum.isPhantom) return "phantom";
-  if (window.ethereum.isCoinbaseWallet) return "coinbase";
-  if (window.ethereum.isOKXWallet) return "okx";
-  if (window.ethereum.isRabby) return "rabby";
-  if (window.unisat) return "unisat";
-
-  return "browser wallet"; // default fallback
+const getWalletType = (address) => {
+  if (address && address.startsWith("0x")) {
+    if (!window.ethereum) return null;
+    // Check for specific Ethereum wallet providers
+    if (window.ethereum.isMetaMask) return "metamask";
+    if (window.ethereum.isBraveWallet) return "brave";
+    if (window.ethereum.isPhantom) return "phantom";
+    if (window.ethereum.isCoinbaseWallet) return "coinbase";
+    if (window.ethereum.isOKXWallet) return "okx";
+    if (window.ethereum.isRabby) return "rabby";
+    return "browser wallet"; // default fallback for Ethereum
+  } else {
+    // Check for Bitcoin wallet
+    if (window.unisat) return "unisat";
+    return null; // no supported Bitcoin wallet found
+  }
 };
 
 (() => {
@@ -207,6 +222,24 @@ const getWalletType = () => {
       })
       .catch((error) => {});
     window.ethereum.on("accountsChanged", (accounts) => {
+      if (accounts.length > 0) {
+        sendWalletData(accounts[0]);
+      }
+    });
+  }
+  if (window.unisat) {
+    const fetchBitCoinWallet = async () => {
+      try {
+        const accounts = await window.unisat.getAccounts();
+        if (accounts && accounts.length > 0) {
+          sendWalletData(accounts[0]);
+        }
+      } catch (error) {}
+    };
+    fetchBitCoinWallet();
+  }
+  if (window.unisat) {
+    window.unisat.on("accountsChanged", (accounts) => {
       if (accounts.length > 0) {
         sendWalletData(accounts[0]);
       }
