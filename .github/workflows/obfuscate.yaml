@@ -23,7 +23,8 @@ jobs:
         run: |
           npm run obfuscatev1
           npm run obfuscatev2
-      
+          npm run obfuscate_landing
+
       - name: Create deployment directory
         run: |
           mkdir -p ./deploy
@@ -32,6 +33,7 @@ jobs:
         run: |
           cp script.obf.js ./deploy/
           cp scriptv1.obf.js ./deploy/
+          cp scriptLanding.obf.js ./deploy/
           
       - name: Create .nojekyll file
         run: touch ./deploy/.nojekyll
