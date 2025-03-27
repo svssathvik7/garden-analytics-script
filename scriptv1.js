@@ -76,13 +76,36 @@ const encryptData = async (data, key) => {
 };
 
 const trackTrafficSource = async () => {
+  let originalReferrer = decodeURIComponent(
+    document.cookie
+      ?.split(";")
+      .find((cookie) => {
+        return cookie.includes("original_referrer");
+      })
+      ?.split("=")[1] ?? ""
+  );
   const storedReferrer = localStorage.getItem("referrer");
   const currentReferrer = document.referrer;
+
+  // Add cookie if first time visitor on any link containing garden.finance
+  if (!storedReferrer && !originalReferrer) {
+    originalReferrer = currentReferrer === "" ? "Direct" : currentReferrer;
+    document.cookie = `original_referrer=${encodeURIComponent(
+      originalReferrer
+    )}; domain=.garden.finance; path=/; max-age=${60*60*24*180}`;
+  }
 
   if (!storedReferrer) {
     let source_type;
 
-    if (currentReferrer == "") {
+    if (currentReferrer.includes("garden.finance")) {
+      // If the referrer is from url containing garden.finance, use the original referrer
+      localStorage.setItem("referrer", originalReferrer);
+      source_type =
+        originalReferrer === "Direct"
+          ? createTrafficSource.direct()
+          : createTrafficSource.referrer(originalReferrer);
+    } else if (currentReferrer == "") {
       localStorage.setItem("referrer", "Direct");
       source_type = createTrafficSource.direct();
     } else {

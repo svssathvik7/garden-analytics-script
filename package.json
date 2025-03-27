@@ -1,14 +1,15 @@
 {
-    "name": "garden-analytics-script",
-    "version": "1.0.0",
-    "description": "Analytics script for tracking traffic and wallet data",
-    "main": "script.js",
-    "scripts": {
-        "obfuscatev2": "javascript-obfuscator script.js --output script.obf.js --compact true --string-array-encoding rc4 --string-array-threshold 1 --transform-object-keys true --target browser --identifier-names-generator hexadecimal --rename-globals true --dead-code-injection-threshold 1",
-        "obfuscatev1": "javascript-obfuscator scriptv1.js --output scriptv1.obf.js --compact true --string-array-encoding rc4 --string-array-threshold 1 --transform-object-keys true --target browser --identifier-names-generator hexadecimal --rename-globals true --dead-code-injection-threshold 1",
-        "git_force_push": "git add . && git commit --no-edit --amend && git push origin main --force"
-    },
-    "devDependencies": {
-        "javascript-obfuscator": "^4.1.0"
-    }
+  "name": "garden-analytics-script",
+  "version": "1.0.0",
+  "description": "Analytics script for tracking traffic and wallet data",
+  "main": "script.js",
+  "scripts": {
+    "obfuscate_landing": "javascript-obfuscator scriptLanding.js --output scriptLanding.obf.js --compact true --string-array-encoding rc4 --string-array-threshold 1 --transform-object-keys true --target browser --identifier-names-generator hexadecimal --rename-globals true --dead-code-injection-threshold 1",
+    "obfuscatev2": "javascript-obfuscator script.js --output script.obf.js --compact true --string-array-encoding rc4 --string-array-threshold 1 --transform-object-keys true --target browser --identifier-names-generator hexadecimal --rename-globals true --dead-code-injection-threshold 1",
+    "obfuscatev1": "javascript-obfuscator scriptv1.js --output scriptv1.obf.js --compact true --string-array-encoding rc4 --string-array-threshold 1 --transform-object-keys true --target browser --identifier-names-generator hexadecimal --rename-globals true --dead-code-injection-threshold 1",
+    "git_force_push": "git add . && git commit --no-edit --amend && git push origin main --force"
+  },
+  "devDependencies": {
+    "javascript-obfuscator": "^4.1.0"
+  }
 }
