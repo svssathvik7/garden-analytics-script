@@ -14,5 +14,5 @@ if (!originalReferrer) {
   originalReferrer = currentReferrer === "" ? "Direct" : currentReferrer;
   document.cookie = `original_referrer=${encodeURIComponent(
     originalReferrer
-  )}; domain=.garden.finance; path=/`;
+  )}; domain=.garden.finance; path=/; max-age=${60*60*24*180}`;
 }
