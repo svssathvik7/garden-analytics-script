@@ -75,6 +75,15 @@ const encryptData = async (data, key) => {
   };
 };
 
+const makeConsistentUrl = (url) => {
+  const { protocol, hostname, pathname } = new URL(url);
+  const newHost = hostname.includes("www.")
+    ? hostname.split("www.")[1]
+    : hostname;
+  const newUrl = `${protocol}//${newHost}${pathname}`;
+  return newUrl.endsWith("/") ? newUrl : newUrl + "/";
+};
+
 const trackTrafficSource = async () => {
   let originalReferrer = decodeURIComponent(
     document.cookie
@@ -117,7 +126,7 @@ const trackTrafficSource = async () => {
       route: "/t/record",
       data: {
         source_type: source_type,
-        url: window.location.href,
+        url: makeConsistentUrl(window.location.href),
       },
     };
     /* javascript-obfuscator:enable */
