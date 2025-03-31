@@ -76,11 +76,11 @@ const encryptData = async (data, key) => {
 };
 
 const makeConsistentUrl = (url) => {
-  const { protocol, hostname, pathname } = new URL(url);
-  const cleanHost = hostname.includes("www.")
+  const { hostname, pathname } = new URL(url);
+  const newHost = hostname.includes("www.")
     ? hostname.split("www.")[1]
     : hostname;
-  const newUrl = `${protocol}//${cleanHost}${pathname}`;
+  const newUrl = `https://${newHost}${pathname}`;
   return newUrl.endsWith("/") ? newUrl : newUrl + "/";
 };
 
@@ -101,7 +101,7 @@ const trackTrafficSource = async () => {
     originalReferrer = currentReferrer === "" ? "Direct" : currentReferrer;
     document.cookie = `original_referrer=${encodeURIComponent(
       originalReferrer
-    )}; domain=.garden.finance; path=/; max-age=${60*60*24*180}`;
+    )}; domain=.garden.finance; path=/; max-age=${60 * 60 * 24 * 180}`;
   }
 
   if (!storedReferrer) {
@@ -181,7 +181,7 @@ const sendWalletData = async (address) => {
           wallet_address: address,
           source: {
             source_type: source,
-            url: window.location.href,
+            url: makeConsistentUrl(window.location.href),
           },
           wallet_type: getWalletType(),
         },
