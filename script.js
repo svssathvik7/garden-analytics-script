@@ -93,8 +93,14 @@ const trackTrafficSource = async () => {
       })
       ?.split("=")[1] ?? ""
   );
-  const storedReferrer = localStorage.getItem("referrer");
+  let storedReferrer = localStorage.getItem("referrer");
   const currentReferrer = document.referrer;
+
+  // Remove old referrer from localStorage if it contains "garden.finance"
+  if (storedReferrer?.includes("garden.finance")) {
+    localStorage.removeItem("referrer");
+    storedReferrer = null;
+  }
 
   // Add cookie if first time visitor on any link containing garden.finance
   if (!storedReferrer && !originalReferrer) {
