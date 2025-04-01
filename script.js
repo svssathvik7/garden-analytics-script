@@ -96,6 +96,12 @@ const trackTrafficSource = async () => {
   let storedReferrer = localStorage.getItem("referrer");
   const currentReferrer = document.referrer;
 
+  // Remove old original_referrer from cookie if it contains "garden.finance"
+  if (originalReferrer?.includes("garden.finance")) {
+    document.cookie = `original_referrer=; domain=.garden.finance; path=/; max-age=0`;
+    originalReferrer = null;
+  }
+
   // Remove old referrer from localStorage if it contains "garden.finance"
   if (storedReferrer?.includes("garden.finance")) {
     localStorage.removeItem("referrer");
