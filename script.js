@@ -85,25 +85,42 @@ const makeConsistentUrl = (url) => {
 };
 
 const trackTrafficSource = async () => {
+  const allowedHosts = [
+    "garden.finance",
+    "www.garden.finance",
+    "app.garden.finance",
+    "new.garden.finance",
+  ];
+
   let originalReferrer = decodeURIComponent(
     document.cookie
       ?.split(";")
       .find((cookie) => {
-        return cookie.includes("original_referrer");
+        return cookie?.includes("original_referrer");
       })
       ?.split("=")[1] ?? ""
   );
   let storedReferrer = localStorage.getItem("referrer");
   const currentReferrer = document.referrer;
 
-  // Remove old original_referrer from cookie if it contains "garden.finance"
-  if (originalReferrer?.includes("garden.finance")) {
+  const isAllowedHost = (referrerUrl) => {
+    if (!referrerUrl || referrerUrl === "Direct") return false;
+    try {
+      const { hostname } = new URL(referrerUrl);
+      return allowedHosts.some((allowedHost) => hostname === allowedHost);
+    } catch (e) {
+      return false;
+    }
+  };
+
+  // Remove old original_referrer from cookie if it's in allowedHosts
+  if (isAllowedHost(originalReferrer)) {
     document.cookie = `original_referrer=; domain=.garden.finance; path=/; max-age=0`;
     originalReferrer = null;
   }
 
-  // Remove old referrer from localStorage if it contains "garden.finance"
-  if (storedReferrer?.includes("garden.finance")) {
+  // Remove old referrer from localStorage if it's in allowedHosts
+  if (isAllowedHost(storedReferrer)) {
     localStorage.removeItem("referrer");
     storedReferrer = null;
   }
@@ -119,8 +136,8 @@ const trackTrafficSource = async () => {
   if (!storedReferrer) {
     let source_type;
 
-    if (currentReferrer.includes("garden.finance")) {
-      // If the referrer is from url containing garden.finance, use the original referrer
+    if (isAllowedHost(currentReferrer)) {
+      // If referrer is one of the allowedHosts, use the original referrer
       localStorage.setItem("referrer", originalReferrer);
       source_type =
         originalReferrer === "Direct"
