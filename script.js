@@ -76,10 +76,16 @@ const encryptData = async (data, key) => {
 };
 
 const makeConsistentUrl = (url) => {
-  const { hostname, pathname } = new URL(url);
+  const { hostname, pathname, searchParams } = new URL(url);
   const newHost = hostname.includes("www.")
     ? hostname.split("www.")[1]
     : hostname;
+
+  if (searchParams.has("utm_source")) {
+    const newUrl = `https://${newHost}${pathname}?${searchParams.toString()}`;
+    return newUrl;
+  }
+
   const newUrl = `https://${newHost}${pathname}`;
   return newUrl.endsWith("/") ? newUrl : newUrl + "/";
 };
