@@ -81,7 +81,10 @@ const makeConsistentUrl = (url) => {
     ? hostname.split("www.")[1]
     : hostname;
 
-  if (searchParams.has("utm_source")) {
+  let searchParamsLength = 0;
+  searchParams.forEach(() => searchParamsLength++);
+
+  if (searchParamsLength > 0) {
     const newUrl = `https://${newHost}${pathname}?${searchParams.toString()}`;
     return newUrl;
   }
@@ -95,7 +98,7 @@ const trackTrafficSource = async () => {
     "garden.finance",
     "www.garden.finance",
     "app.garden.finance",
-    "new.garden.finance",
+    "legacy.garden.finance",
   ];
 
   let originalReferrer = decodeURIComponent(
@@ -118,18 +121,6 @@ const trackTrafficSource = async () => {
       return false;
     }
   };
-
-  // Remove old original_referrer from cookie if it's in allowedHosts
-  if (isAllowedHost(originalReferrer)) {
-    document.cookie = `original_referrer=; domain=.garden.finance; path=/; max-age=0`;
-    originalReferrer = null;
-  }
-
-  // Remove old referrer from localStorage if it's in allowedHosts
-  if (isAllowedHost(storedReferrer)) {
-    localStorage.removeItem("referrer");
-    storedReferrer = null;
-  }
 
   // Add cookie if first time visitor on any link containing garden.finance
   if (!storedReferrer && !originalReferrer) {
