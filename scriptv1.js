@@ -111,6 +111,9 @@ const trackTrafficSource = async () => {
   );
   let storedReferrer = localStorage.getItem("referrer");
   const currentReferrer = document.referrer;
+  const utmSource = new URL(window.location.href).searchParams.get(
+    "utm_source"
+  );
 
   const isAllowedHost = (referrerUrl) => {
     if (!referrerUrl || referrerUrl === "Direct") return false;
@@ -133,7 +136,11 @@ const trackTrafficSource = async () => {
   if (!storedReferrer) {
     let source_type;
 
-    if (isAllowedHost(currentReferrer)) {
+    if (utmSource) {
+      // utm_source overrides everything
+      localStorage.setItem("referrer", utmSource);
+      source_type = createTrafficSource.referrer(utmSource);
+    } else if (isAllowedHost(currentReferrer)) {
       // If referrer is one of the allowedHosts, use the original referrer
       localStorage.setItem("referrer", originalReferrer);
       source_type =
