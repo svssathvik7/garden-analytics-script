@@ -211,7 +211,7 @@ const sendWalletData = async (address) => {
         route: "/w/record",
         data: {
           ip: await getIpAddress(),
-          wallet_address: address,
+          wallet_address: address.toLowerCase(),
           source: {
             source_type: source,
             url: makeConsistentUrl(window.location.href),
