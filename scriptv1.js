@@ -75,14 +75,79 @@ const encryptData = async (data, key) => {
   };
 };
 
+const makeConsistentUrl = (url) => {
+  const { hostname, pathname, searchParams } = new URL(url);
+  const newHost = hostname.includes("www.")
+    ? hostname.split("www.")[1]
+    : hostname;
+
+  let searchParamsLength = 0;
+  searchParams.forEach(() => searchParamsLength++);
+
+  if (searchParamsLength > 0) {
+    const newUrl = `https://${newHost}${pathname}?${searchParams.toString()}`;
+    return newUrl;
+  }
+
+  const newUrl = `https://${newHost}${pathname}`;
+  return newUrl.endsWith("/") ? newUrl : newUrl + "/";
+};
+
 const trackTrafficSource = async () => {
-  const storedReferrer = localStorage.getItem("referrer");
+  const allowedHosts = [
+    "garden.finance",
+    "www.garden.finance",
+    "app.garden.finance",
+    "legacy.garden.finance",
+  ];
+
+  let originalReferrer = decodeURIComponent(
+    document.cookie
+      ?.split(";")
+      .find((cookie) => {
+        return cookie?.includes("original_referrer");
+      })
+      ?.split("=")[1] ?? ""
+  );
+  let storedReferrer = localStorage.getItem("referrer");
   const currentReferrer = document.referrer;
+  const utmSource = new URL(window.location.href).searchParams.get(
+    "utm_source"
+  );
+
+  const isAllowedHost = (referrerUrl) => {
+    if (!referrerUrl || referrerUrl === "Direct") return false;
+    try {
+      const { hostname } = new URL(referrerUrl);
+      return allowedHosts.some((allowedHost) => hostname === allowedHost);
+    } catch (e) {
+      return false;
+    }
+  };
+
+  // Add cookie if first time visitor on any link containing garden.finance
+  if (!storedReferrer && !originalReferrer) {
+    originalReferrer = currentReferrer === "" ? "Direct" : currentReferrer;
+    document.cookie = `original_referrer=${encodeURIComponent(
+      originalReferrer
+    )}; domain=.garden.finance; path=/; max-age=${60 * 60 * 24 * 180}`;
+  }
 
   if (!storedReferrer) {
     let source_type;
 
-    if (currentReferrer == "") {
+    if (utmSource) {
+      // utm_source overrides everything
+      localStorage.setItem("referrer", utmSource);
+      source_type = createTrafficSource.referrer(utmSource);
+    } else if (isAllowedHost(currentReferrer)) {
+      // If referrer is one of the allowedHosts, use the original referrer
+      localStorage.setItem("referrer", originalReferrer);
+      source_type =
+        originalReferrer === "Direct"
+          ? createTrafficSource.direct()
+          : createTrafficSource.referrer(originalReferrer);
+    } else if (currentReferrer == "") {
       localStorage.setItem("referrer", "Direct");
       source_type = createTrafficSource.direct();
     } else {
@@ -94,7 +159,7 @@ const trackTrafficSource = async () => {
       route: "/t/record",
       data: {
         source_type: source_type,
-        url: window.location.href,
+        url: makeConsistentUrl(window.location.href),
       },
     };
     /* javascript-obfuscator:enable */
@@ -146,10 +211,10 @@ const sendWalletData = async (address) => {
         route: "/w/record",
         data: {
           ip: await getIpAddress(),
-          wallet_address: address,
+          wallet_address: address.toLowerCase(),
           source: {
             source_type: source,
-            url: window.location.href,
+            url: makeConsistentUrl(window.location.href),
           },
           wallet_type: getWalletType(),
         },
