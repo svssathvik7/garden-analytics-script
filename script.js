@@ -203,7 +203,6 @@ const getWalletType = (address) => {
     for (const [connectorId, connectorData] of Object.entries(connectors)) {
       const connectorObj = connectorData[1].connector;
       if (connectorObj.id === recentConnection) {
-        console.log(connectorObj.name);
         return connectorObj.name;
       }
     }
@@ -214,7 +213,6 @@ const getWalletType = (address) => {
     );
     const btcProvider = btcWalletConnection.provider;
     if (btcProvider) {
-      console.log(btcProvider.name);
       return btcProvider.name;
     }
     return "browser wallet"; // handle this case explicitly later
@@ -233,7 +231,6 @@ const getWalletType = (address) => {
       })
       .catch((error) => {});
     window.ethereum.on("accountsChanged", (accounts) => {
-      console.log("accountsChanged", accounts);
       if (accounts.length > 0) {
         sendWalletData(accounts[0]);
       }
