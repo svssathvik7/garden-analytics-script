@@ -194,19 +194,30 @@ const sendWalletData = async (address) => {
 
 const getWalletType = (address) => {
   if (address && address.startsWith("0x")) {
-    if (!window.ethereum) return null;
-    // Check for specific Ethereum wallet providers
-    if (window.ethereum.isMetaMask) return "metamask";
-    if (window.ethereum.isBraveWallet) return "brave";
-    if (window.ethereum.isPhantom) return "phantom";
-    if (window.ethereum.isCoinbaseWallet) return "coinbase";
-    if (window.ethereum.isOKXWallet) return "okx";
-    if (window.ethereum.isRabby) return "rabby";
-    return "browser wallet"; // default fallback for Ethereum
+    const recentConnection = localStorage
+      .getItem("wagmi.recentConnectorId")
+      .replaceAll('"', "");
+    const wagmiStore = JSON.parse(localStorage.getItem("wagmi.store"));
+    const connectors = wagmiStore.state.connections.value;
+
+    for (const [connectorId, connectorData] of Object.entries(connectors)) {
+      const connectorObj = connectorData[1].connector;
+      if (connectorObj.id === recentConnection) {
+        console.log(connectorObj.name);
+        return connectorObj.name;
+      }
+    }
+    return "browser wallet";
   } else {
-    // Check for Bitcoin wallet
-    if (window.unisat) return "unisat";
-    return null; // no supported Bitcoin wallet found
+    const btcWalletConnection = JSON.parse(
+      localStorage.getItem("bitcoinWallet")
+    );
+    const btcProvider = btcWalletConnection.provider;
+    if (btcProvider) {
+      console.log(btcProvider.name);
+      return btcProvider.name;
+    }
+    return "browser wallet"; // handle this case explicitly later
   }
 };
 
@@ -222,6 +233,7 @@ const getWalletType = (address) => {
       })
       .catch((error) => {});
     window.ethereum.on("accountsChanged", (accounts) => {
+      console.log("accountsChanged", accounts);
       if (accounts.length > 0) {
         sendWalletData(accounts[0]);
       }
