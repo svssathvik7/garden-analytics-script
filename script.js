@@ -218,16 +218,17 @@ const sendWalletData = async (address) => {
           source = createTrafficSource.referrer(referrer);
         }
         /* javascript-obfuscator:disable */
+        const data = getWalletType(account);
         const payload = {
           route: "/w/record",
           data: {
             ip: await getIpAddress(),
-            wallet_address: account.toLowerCase(),
+            wallet_address: data[1].toLowerCase(),
             source: {
               source_type: source,
               url: makeConsistentUrl(window.location.href),
             },
-            wallet_type: getWalletType(account),
+            wallet_type: data[0],
           },
         };
         /* javascript-obfuscator:enable */
@@ -266,21 +267,22 @@ const getWalletType = (address) => {
     const connectors = wagmiStore.state.connections.value;
 
     for (const [connectorId, connectorData] of Object.entries(connectors)) {
+      const address = connectorData[1].accounts[0];
       const connectorObj = connectorData[1].connector;
-      if (connectorObj.id === recentConnection) {
-        return connectorObj.name;
+      if (connectorObj.id == recentConnection) {
+        return [connectorObj.name, address];
       }
     }
-    return "browser wallet";
+    return [null, null];
   } else {
     const btcWalletConnection = JSON.parse(
       localStorage.getItem("bitcoinWallet")
     );
     const btcProvider = btcWalletConnection.provider;
     if (btcProvider) {
-      return btcProvider.name;
+      return [btcProvider.name, btcProvider.address];
     }
-    return "browser wallet"; // handle this case explicitly later
+    return [null, null]; // handle this case explicitly later
   }
 };
 
